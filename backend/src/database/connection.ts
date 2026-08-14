@@ -1,33 +1,8 @@
 import "reflect-metadata";
-import * as oracledb from "oracledb";
+import mysql from "mysql2/promise";
 import { DataSource, Repository, EntityTarget, ObjectLiteral } from "typeorm";
 import constants from "../helpers/constants";
-import { TenantManager } from "../database/TenantManager";
 
-// Add these imports at the top of connection.ts, after the existing imports
-import { HrAirport } from "../models/Hr/hr_airport";
-import { HrBank } from "../models/Hr/hr_bank";
-import { Categorymaster } from "../models/Hr/hr_category";
-import { HrContract } from "../models/Hr/hr_contract";
-import { HrDepartment } from "../models/Hr/hr_department";
-import { HrDesignation } from "../models/Hr/hr_designation";
-import { HrDivision } from "../models/Hr/hr_division";
-import { HrEmpStatus } from "../models/Hr/hr_employee_status";
-import { HrGrade } from "../models/Hr/hr_grade";
-import { KpiNamemaster } from "../models/Hr/hr_kpiname";
-import { HrLabourDesignation } from "../models/Hr/hr_labour_designation";
-import { Leavetype } from "../models/Hr/hr_leavetype";
-import { OperationMaster } from "../models/Hr/hr_operation";
-import { HrPaycomponent } from "../models/Hr/hr_paycomponents";
-import { HrSection } from "../models/Hr/hr_section";
-import { HrSponsor } from "../models/Hr/hr_sponsor";
-import { HrViewEmp } from "../views/hr/hr_view_employee";
-import { Account } from "../models/finance/accounts/masters/account_finance.entity";
-import { AccountBlSetup } from "../models/finance/accounts/masters/account_finance_bl.entity";
-import { AccountPlSetup } from "../models/finance/accounts/masters/account_finance_pl.entity";
-import { AccountLevelTwo } from "../models/finance/accounts/masters/account_level_two.entity";
-import { AccountLevelThree } from "../models/finance/accounts/masters/account_level_three.entity";
-import { AccountLevelFour } from "../models/finance/accounts/masters/account_level_four.entity";
 import {
   AccessRoleAppAccess,
   AccessSecModuleData,
@@ -51,125 +26,31 @@ import {
   SecModule,
   User,
 } from "../entity/Security";
-import { TsStn } from "../entity/WMS/TsStn.entity";
-import { TsStndetail } from "../entity/WMS/TsStndetail.entity";
-import { TaAdjDetail } from "../entity/WMS/taAdjDetail.entity";
-import {TaAdjHeader} from "../entity/WMS/taAdjHeader.entity";
-import {InboundJobWms} from "../entities/wms/transaction/inbound/InboundJobWms.entity"
-import { JobOutboundWms } from "../models/wms/transaction/outbound/JobOutboundWms.entity";
-import { TiContainer } from "../entities/wms/transaction/inbound/TiContainer.entity";
-import { PackingDetailsInboundWms } from "../entity/WMS/transaction/inbound/PackingDetailsInboundWms.entity";
-import { TtBatch } from "../entity/WMS/transaction/inbound/TtBatch.entity";
-import { Product } from "../entity/WMS/product.entity";
-import { TiPackdet } from "../entity/WMS/TiPackdet";
-import { AcSetup } from "../entity/WMS/acsetup.entity";
-import { Activity } from "../entity/WMS/activity.entity";
-import { ActivityGroupMaster } from "../entity/WMS/activitygroup.entity";
-import { ActivityKpi } from "../entity/WMS/activitykpi.entity";
-import { ActivitySubgroup } from "../entity/WMS/activity_subgroup.entity";
-import { Airline } from "../entity/WMS/airline.entity";
-import { Alert } from "../entity/WMS/alert.entity";
-import { BillingActivity } from "../entity/WMS/billing_activity.entity";
-import { Brand } from "../entity/WMS/brand.entity";
-import { ConfirmInboundjob } from "../entity/WMS/confirmInboundjob.entity";
-import { CountryMaster } from "../entity/WMS/country.entity";
-import { CurrencyMaster } from "../entity/WMS/currency.entity";
-import { CustomerMaster } from "../entity/WMS/Customer.entity";
-import { DepartmentMaster } from "../entity/WMS/department.entity";
-import { Division } from "../entity/WMS/division.entity";
-import { ProductGroup } from "../entity/WMS/group.entity";
-import { Harmonize } from "../entity/WMS/harmonize.entity";
-import { LineMaster } from "../entity/WMS/line.entity";
-import { LocationMaster } from "../entity/WMS/location.entity";
-import { LocationType } from "../entity/WMS/locationtype.entity";
-import { Manufacturer } from "../entity/WMS/manufacturer.entity";
-import { MocMaster } from "../entity/WMS/moc.entity";
-import { BrokerMaster } from "../entity/WMS/partner.entity";
-import { PortMaster } from "../entity/WMS/port.entity";
-import { PrincipalMaster } from "../entity/WMS/principal.entity";
-import { PrincipalContactDetl } from "../entity/WMS/principalcontactdetl.entity";
-import { UploadedFilesDlts } from "../entity/WMS/principalfile.entity";
-import { ProducttypeMaster } from "../entity/WMS/producttype.entity";
-import { ProductEDI } from "../entity/WMS/product_edi.entity";
-import { SalesmanMaster } from "../entity/WMS/salesman.entity";
-import { MntStorageHdr } from "../entity/WMS/storage.entity";
-import { SupplierMaster } from "../entity/WMS/suppliermaster.entity";
-import { ActivityUOC } from "../entity/WMS/uoc.entity";
-import { UomMaster } from "../entity/WMS/uom.entity";
-import { Vessel } from "../entity/WMS/vessel.entity";
-import { Warehouse } from "../entity/WMS/Warehouse.entity";
-import { TiTallyDetail } from "../entity/WMS/TiTallyDetail.entity";
-import { FilesAFEntity } from "../entities/account_files.entity";
-// TEMP EMERGENCY: allow skipping Oracle thick client init using FORCE_THIN_ORACLE=1
-if (process.env.FORCE_THIN_ORACLE === "1") {
-  console.warn("FORCE_THIN_ORACLE=1 set — skipping oracledb.initOracleClient() (using thin mode)");
-} else {
-  try {
-    oracledb.initOracleClient({
-      libDir:
-        constants.DATABASE.ORACLE_INSTANT_CLIENT_PATH ||
-        process.env.ORACLE_INSTANT_CLIENT_PATH,
-    });
-    console.log("Oracle thick mode initialized");
-  } catch (err) {
-    console.error("Error initializing Oracle thick mode:", err);
-    console.log("Using thin mode as fallback");
-  }
-} 
 
-// ==================== RAW ORACLE CONFIG ====================
-const dbConfig: oracledb.PoolAttributes = {
-  user: constants.DATABASE.ORACLE_USER || process.env.ORACLE_USER,
-  password:
-    constants.DATABASE.ORACLE_PASSWORD ||
-    process.env.ORACLE_PASSWORD,
-  connectString:
-    constants.DATABASE.ORACLE_CONNECTION_STRING ||
-    process.env.ORACLE_CONNECTION_STRING,
-  poolMin: 5,
-  poolMax: 20,
-  poolIncrement: 2,
-  poolTimeout: 60,
+// MySQL/raw pool config
+const dbConfig: any = {
+  host: constants.DATABASE.MYSQL_HOST || process.env.MYSQL_HOST || "127.0.0.1",
+  port: Number(constants.DATABASE.MYSQL_PORT || process.env.MYSQL_PORT) || 3306,
+  user: constants.DATABASE.MYSQL_USER || process.env.MYSQL_USER || "root",
+  password: constants.DATABASE.MYSQL_PASSWORD || process.env.MYSQL_PASSWORD || "",
+  database: constants.DATABASE.MYSQL_DATABASE || process.env.MYSQL_DATABASE || "",
+  waitForConnections: true,
+  connectionLimit: 10,
 };
-
-let oraclePool: oracledb.Pool | null = null;
 
 // ==================== TYPEORM CONFIG - FIXED ====================
 export const AppDataSource = new DataSource({
-  type: "oracle",
-  connectString:
-    constants.DATABASE.ORACLE_CONNECTION_STRING ||
-    process.env.ORACLE_CONNECTION_STRING ,
-  username: constants.DATABASE.ORACLE_USER || process.env.ORACLE_USER ,
-  password:
-    constants.DATABASE.ORACLE_PASSWORD ||
-    process.env.ORACLE_PASSWORD,
+  type: "mysql",
+  // Use URL if provided, otherwise use host/port/database fields
+  url: constants.DATABASE.MYSQL_CONNECTION_STRING || process.env.MYSQL_CONNECTION_STRING,
+  host: constants.DATABASE.MYSQL_HOST || process.env.MYSQL_HOST || "127.0.0.1",
+  port: Number(constants.DATABASE.MYSQL_PORT || process.env.MYSQL_PORT) || 3306,
+  username: constants.DATABASE.MYSQL_USER || process.env.MYSQL_USER,
+  password: constants.DATABASE.MYSQL_PASSWORD || process.env.MYSQL_PASSWORD,
+  database: constants.DATABASE.MYSQL_DATABASE || process.env.MYSQL_DATABASE,
   synchronize: false,
   logging: true,
   entities: [
-  HrAirport,
-  HrBank,
-  Categorymaster,
-  HrContract,
-  HrDepartment,
-  HrDesignation,
-  HrDivision,
-  HrEmpStatus,
-  HrGrade,
-  KpiNamemaster,
-  HrLabourDesignation,
-  Leavetype,
-  OperationMaster,
-  HrPaycomponent,
-  HrSection,
-  HrSponsor,
-  HrViewEmp,
-  Account,
-  AccountBlSetup,
-  AccountPlSetup,
-  AccountLevelTwo,
-  AccountLevelThree,
-  AccountLevelFour,
   AccessRoleAppAccess,
   AccessSecModuleData,
   AccessSecOperation,
@@ -191,56 +72,6 @@ export const AppDataSource = new DataSource({
   SecLoginUserDivision,
   SecModule,
   User,
-  TsStn, 
-  TsStndetail,
-  TaAdjDetail,
-  TaAdjHeader,
-  InboundJobWms,
-  JobOutboundWms,
-  TiContainer,
-  PackingDetailsInboundWms,
-  TtBatch,
-  TiPackdet,
-  Product,
-  TiTallyDetail,
-  AcSetup,
-  Activity,
-  ActivityGroupMaster,
-  ActivityKpi,
-  ActivitySubgroup,
-  Airline,
-  Alert,
-  BillingActivity,
-  Brand,
-  ConfirmInboundjob,
-  CountryMaster,
-  CurrencyMaster,
-  CustomerMaster,
-  DepartmentMaster,
-  Division,
-  ProductGroup,
-  Harmonize,
-  LineMaster,
-  LocationMaster,
-  LocationType,
-  Manufacturer,
-  MocMaster,
-  BrokerMaster,
-  PortMaster,
-  PrincipalMaster,
-  PrincipalContactDetl,
-  UploadedFilesDlts,
-  ProducttypeMaster,
-  ProductEDI,
-  SalesmanMaster,
-  MntStorageHdr,
-  SupplierMaster,
-  TiTallyDetail,
-  ActivityUOC,
-  UomMaster,
-  Vessel,
-  Warehouse,
-  FilesAFEntity
 ],
 
   migrations: ["src/migration/**/*.ts"],
@@ -276,19 +107,17 @@ class TypeORMService {
       if (!AppDataSource.isInitialized) {
         console.log("Attempting TypeORM connection...");
         console.log("TypeORM Config:", {
-          type: "oracle",
+          type: "MYSQL",
           connectString:
-            constants.DATABASE.ORACLE_CONNECTION_STRING ||
-            process.env.ORACLE_CONNECTION_STRING,
-          username: process.env.ORACLE_USER,
+            constants.DATABASE.MYSQL_CONNECTION_STRING ||
+            process.env.MYSQL_CONNECTION_STRING,
+          username: process.env.MYSQL_USER,
         });
 
         await AppDataSource.initialize();
-        console.log("TypeORM Connected to Oracle Database");
+        console.log("TypeORM Connected to MYSQL Database");
 
-        await AppDataSource.query(
-          "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'"
-        );
+        // No Oracle session settings required for MySQL single-tenant setup.
 
         this.initialized = true;
         this.initPromise = null;
@@ -296,7 +125,7 @@ class TypeORMService {
     } catch (error) {
       this.initPromise = null;
       console.error("TypeORM connection failed:", error);
-      console.log("TypeORM failed, but raw Oracle connection is active");
+      console.log("TypeORM failed, but raw MYSQL connection is active");
       throw error;
     }
   }
@@ -384,7 +213,7 @@ class TypeORMService {
         console.log(" Connection restored");
         return;
       }
-      await AppDataSource.query("SELECT 1 FROM DUAL");
+      await AppDataSource.query("SELECT 1");
     } catch (error) {
       console.log("Connection health check failed - reconnecting...");
       this.initialized = false;
@@ -453,89 +282,100 @@ function processBindParameters(binds: any): any {
   return processedBinds;
 }
 
-// ==================== RAW ORACLE FUNCTIONS ====================
-export const oracleDb = {
-  authenticate: async (): Promise<void> => {
-    try {
-      oraclePool = await oracledb.createPool(dbConfig);
-      console.log(" Oracle Database Connected (Thick Mode)");
-    } catch (error: unknown) {
-      console.error(
-        "Oracle connection failed:",
-        error instanceof Error ? error.message : String(error)
-      );
-      throw error;
-    }
+// ==================== RAW MYSQL FUNCTIONS ====================
+// Legacy "MYSQLDb" removed. Use `mysqlDb` (mysql2/promise) for pool and queries.
+
+// ==================== MYSQL COMPATIBILITY WRAPPER ====================
+let mysqlPool: mysql.Pool | null = null;
+
+function replaceNamedBinds(sql: string, binds: any) {
+  if (!binds) return { sql, values: [] };
+  const values: any[] = [];
+  // Replace :name with ? preserving order
+  const newSql = sql.replace(/:(\w+)/g, (_m, name) => {
+    values.push(binds[name]);
+    return "?";
+  });
+  return { sql: newSql, values };
+}
+
+export const mysqlDb = {
+  authenticate: async (opts?: { host?: string; port?: number; user?: string; password?: string; database?: string }) => {
+    if (mysqlPool) return;
+    const host = opts?.host || process.env.MYSQL_HOST || "127.0.0.1";
+    const port = opts?.port || Number(process.env.MYSQL_PORT) || 3306;
+    const user = opts?.user || process.env.MYSQL_USER || "root";
+    const password = opts?.password || process.env.MYSQL_PASSWORD || "";
+    const database = opts?.database || process.env.MYSQL_DATABASE || "test";
+    mysqlPool = mysql.createPool({ host, port, user, password, database, waitForConnections: true, connectionLimit: 10, namedPlaceholders: false });
+    console.log("MySQL pool created");
   },
 
-  getConnection: async (): Promise<oracledb.Connection> => {
-    if (!oraclePool)
-      throw new Error("Database not connected. Call authenticate() first.");
-    return await oraclePool.getConnection();
+  getConnection: async (): Promise<mysql.PoolConnection> => {
+    if (!mysqlPool) await mysqlDb.authenticate();
+    return (mysqlPool as mysql.Pool).getConnection();
   },
 
-  withTransaction: async <T>(
-    fn: (conn: oracledb.Connection) => Promise<T>
-  ): Promise<T> => {
-    const conn = await oracleDb.getConnection();
+  withTransaction: async <T>(fn: (conn: mysql.PoolConnection) => Promise<T>): Promise<T> => {
+    const conn = await mysqlDb.getConnection();
     try {
-      await conn.execute("BEGIN NULL; END;");
+      await conn.beginTransaction();
       const result = await fn(conn);
       await conn.commit();
       return result;
     } catch (err) {
-      await conn.rollback();
+      try { await conn.rollback(); } catch (e) { console.warn('rollback failed', e); }
       throw err;
     } finally {
-      await conn.close();
+      conn.release();
     }
   },
 
-  query: async (
-    sql: string,
-    binds?: any,
-    conn?: oracledb.Connection
-  ): Promise<any> => {
-    const useExternalConn = Boolean(conn);
-    let connection: oracledb.Connection | undefined;
-
+  query: async (sql: string, binds?: any, conn?: any): Promise<any> => {
+    const useExternal = Boolean(conn);
+    let connection: mysql.PoolConnection | null = null;
     try {
-      connection = conn ?? (await oracleDb.getConnection());
-      const options = {
-        outFormat: oracledb.OUT_FORMAT_OBJECT,
-        autoCommit: !useExternalConn,
-      };
+      if (useExternal) {
+        connection = conn as mysql.PoolConnection;
+      } else {
+        connection = await mysqlDb.getConnection();
+      }
 
-      const processedBinds = processBindParameters(binds || {});
-      const result = await connection.execute(sql, processedBinds, options);
+      // Handle RETURNING ... INTO :param (basic support)
+      const returningMatch = /RETURNING\s+([A-Z0-9_]+)\s+INTO\s+:(\w+)/i.exec(sql);
+      let returningName: string | null = null;
+      if (returningMatch) {
+        returningName = returningMatch[2];
+        sql = sql.replace(/RETURNING\s+[A-Z0-9_]+\s+INTO\s+:\w+/i, "");
+      }
+
+      const { sql: preparedSql, values } = replaceNamedBinds(sql, binds || {});
+      const [rows, fields] = await connection.query(preparedSql, values);
+
+      const result: any = { rows };
+      // map affectedRows / insertId
+      if ((rows as any).affectedRows !== undefined) result.rowsAffected = (rows as any).affectedRows;
+      if ((rows as any).insertId !== undefined) result.insertId = (rows as any).insertId;
+      if (returningName) {
+        result.outBinds = { [returningName]: [(rows as any).insertId] };
+      }
       return result;
-    } catch (error: unknown) {
-      console.error(
-        "Query failed:",
-        error instanceof Error ? error.message : String(error)
-      );
-      console.error("SQL that failed:", sql);
-      console.error("Bind parameters:", binds);
+    } catch (error) {
+      console.error("MySQL query failed:", error, sql, binds);
       throw error;
     } finally {
-      if (connection && !useExternalConn) {
-        try {
-          await connection.close();
-        } catch (err) {
-          console.error("Error closing connection:", err);
-        }
+      if (connection && !useExternal) {
+        try { connection.release(); } catch (e) { console.warn('release failed', e); }
       }
     }
   },
 
-  close: async (): Promise<void> => {
-    if (oraclePool) {
-      await oraclePool.close();
-      oraclePool = null;
+  close: async () => {
+    if (mysqlPool) {
+      await mysqlPool.end();
+      mysqlPool = null;
     }
-  },
-
-  processBindParameters,
+  }
 };
 
 // ==================== UPDATED INITIALIZATION ====================
@@ -543,37 +383,23 @@ export const initializeAllConnections = async (): Promise<void> => {
   console.log("Starting database connections...");
 
   try {
-    // 1. Initialize Tenant Manager FIRST
-    console.log("Initializing Tenant Manager...");
-    if (process.env.EMERGENCY_SKIP_TENANT_INIT === '1') {
-      console.warn("EMERGENCY_SKIP_TENANT_INIT=1 — skipping TenantManager.initialize() (EMERGENCY MODE)");
-    } else {
-      try {
-        await TenantManager.initialize();
-        console.log(" Tenant Manager initialized");
-      } catch (err) {
-        console.warn(" TenantManager.initialize() failed (continuing startup):", err);
-      }
-    }
-
-    // 2. Initialize legacy connection (non-blocking)
-    console.log("Initializing legacy Oracle connection...");
+    // 1. Initialize legacy connection (non-blocking)
+    console.log("Initializing legacy MYSQL connection...");
     try {
-      await oracleDb.authenticate();
+      await mysqlDb.authenticate();
       console.log("Legacy database connection ready");
     } catch (legacyError) {
-      console.warn(" Legacy Oracle connection failed (app will continue):", legacyError instanceof Error ? legacyError.message : String(legacyError));
+      console.warn(" Legacy MYSQL connection failed (app will continue):", legacyError instanceof Error ? legacyError.message : String(legacyError));
       // Continue without legacy connection
     }
-
-    // 3. Initialize TypeORM (optional - don't block if it fails)
+    // 2. Initialize TypeORM (optional - don't block if it fails)
     console.log("Initializing TypeORM...");
     try {
       await TypeORMService.initialize();
       console.log(" TypeORM connection ready");
     } catch (typeOrmError) {
       console.warn("TypeORM initialization failed (continuing without it):", typeOrmError instanceof Error ? typeOrmError.message : String(typeOrmError));
-      // Continue without TypeORM - application can still work with raw Oracle
+      // Continue without TypeORM - application can still work with raw MYSQL
     }
 
     console.log("Database initialization completed (some services may be unavailable)");
@@ -584,8 +410,7 @@ export const initializeAllConnections = async (): Promise<void> => {
 };
 
 export const closeAllConnections = async (): Promise<void> => {
-  await TenantManager.closeAll();
-  await oracleDb.close();
+  await mysqlDb.close();
   await TypeORMService.close();
   console.log("All database connections closed");
 };
@@ -594,15 +419,14 @@ export const closeAllConnections = async (): Promise<void> => {
 export const databaseConnection = (): Promise<boolean> => {
   return new Promise(async (resolve) => {
     try {
-      await oracleDb.authenticate();
-      await oracleDb.query(
-        "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS'"
-      );
-      console.log("Oracle Database Connected and Session Set");
+      await mysqlDb.authenticate();
+      // quick health check
+      await mysqlDb.query("SELECT 1");
+      console.log("MYSQL Database Connected and Session Set");
       resolve(true);
     } catch (error: unknown) {
       console.error(
-        "Oracle authentication failed in databaseConnection check:",
+        "MYSQL authentication failed in databaseConnection check:",
         error
       );
       resolve(false);
@@ -612,12 +436,13 @@ export const databaseConnection = (): Promise<boolean> => {
 
 // ==================== TENANT-AWARE QUERY HELPER ====================
 export async function executeInTenantSchema<T>(
-  tenantId: string,
+  _tenantId: string,
   query: string,
   params: Record<string, any> = {}
 ): Promise<T[]> {
-  const { TenantManager } = require("./TenantManager");
-  return await TenantManager.executeInTenant(tenantId, query, params);
+  // Single-tenant mode: ignore tenantId and run the query against MySQL pool
+  const res = await mysqlDb.query(query, params);
+  return res.rows || res;
 }
 
 // ==================== EXPORTS ====================
@@ -681,9 +506,9 @@ export const createBindObjects = (
 
 // ==================== SEQUELIZE SHIM (LEGACY SUPPORT) ====================
 // NOTE: Sequelize is no longer used at runtime. This export is for legacy model file imports only.
-// Legacy model files are being phased out in favor of TypeORM entities and oracle8 QueryExecutor.
+// Legacy model files are being phased out in favor of TypeORM entities and MYSQL8 QueryExecutor.
 export const sequelize: any = {
-  dialect: "oracle",
+  dialect: "MYSQL",
   options: { logging: false },
   // Mock transaction method for legacy code
   transaction: async (callback: any) => {

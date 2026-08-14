@@ -1,6 +1,4 @@
 import {  Response, NextFunction } from "express";
-import { TenantManager } from "../database/TenantManager";
-import { AppDataSource } from "../database/connection";
 import { RequestWithUser } from "../interfaces/common.interface";
 import { AsyncLocalStorage } from "async_hooks";
 
@@ -37,12 +35,9 @@ export async function tenantContextMiddleware(
     }
 
     if (!tenantId) {
-      console.error(`[tenantContextMiddleware] No tenant found for user: ${req.user.loginid}`);
-      res.status(403).json({
-        success: false,
-        message: "No tenant mapped for this user",
-      });
-      return;
+      // Single-tenant fallback: use default tenant id
+      tenantId = process.env.DEFAULT_TENANT || "DEFAULT_TENANT";
+      console.log(`[tenantContextMiddleware] No tenant in request; falling back to ${tenantId}`);
     }
 
     console.log(`[tenantContextMiddleware]  Tenant detected: ${tenantId} for user: ${req.user.loginid}`);
@@ -65,27 +60,8 @@ export async function tenantContextMiddleware(
 
     tenantContextStorage.enterWith(tenantContext);
     
-    // ✨ CRITICAL: Switch TypeORM schema to tenant schema and WAIT before proceeding
-    console.log(`[tenantContextMiddleware] STEP 3: Switching TypeORM schema to tenant (awaiting)...`);
-    try {
-      if (AppDataSource.isInitialized) {
-        const tenantConfig = await TenantManager.getTenantConfig(tenantId);
-        const schemaName = tenantConfig.SCHEMA_NAME;
-
-        const queryRunner = AppDataSource.createQueryRunner();
-        try {
-          console.log(`[tenantContextMiddleware] Executing ALTER SESSION for schema: ${schemaName}`);
-          await queryRunner.query(`ALTER SESSION SET CURRENT_SCHEMA = ${schemaName}`);
-          console.log(`[tenantContextMiddleware] TypeORM schema switched to ${schemaName}`);
-        } finally {
-          await queryRunner.release();
-        }
-      } else {
-        console.log(`[tenantContextMiddleware] TypeORM not initialized, skipping schema switch`);
-      }
-    } catch (schemaError) {
-      console.warn(`[tenantContextMiddleware] Schema switch failed (continuing anyway):`, schemaError);
-    }
+    // Single-tenant mode: no schema switching required. Ensure tenant context set.
+    console.log(`[tenantContextMiddleware] Single-tenant mode: skipping schema switch, tenant=${tenantId}`);
     
     // ✨ Clear global context when response finishes to prevent memory leaks
     res.on('finish', () => {

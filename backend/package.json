@@ -1,5 +1,5 @@
 {
-  "name": "bayanat-backend",
+  "name": "backend",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -43,11 +43,11 @@
     "oci-common": "^2.120.0",
     "oci-objectstorage": "^2.120.0",
     "oracledb": "^6.10.0",
+    "mysql2": "^3.3.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
-    "sequelize": "file:src/shims/sequelize",
     "socket.io": "^4.8.1",
     "typeorm": "^0.3.27",
     "winston": "^3.17.0",

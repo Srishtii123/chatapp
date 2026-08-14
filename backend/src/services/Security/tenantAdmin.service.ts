@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { oracleDb } from "../../database/connection";
+import { mysqlDb } from "../../database/connection";
 
 type PageParams = {
   page?: number;
@@ -142,7 +142,7 @@ export class TenantAdminService {
     };
 
     if (existing) {
-      await oracleDb.query(
+      await mysqlDb.query(
         `UPDATE ${ROOT_SCHEMA}.SEC_LOGINTEST
             SET COMPANY_CODE = :companyCode,
                 EMAIL_ID = :emailId,
@@ -163,15 +163,14 @@ export class TenantAdminService {
                 LAST_ACTION = :lastAction,
                 LOGINID1 = :loginid1,
                 UPDATED_BY = :updatedBy,
-                UPDATED_AT = SYSTIMESTAMP
+                UPDATED_AT = NOW()
                 ${passwordUpdateSql}
           WHERE LOGINID = :loginid`,
         binds
       );
       return { mode: "updated" };
     }
-
-    await oracleDb.query(
+    await mysqlDb.query(
       `INSERT INTO ${ROOT_SCHEMA}.SEC_LOGINTEST (
           COMPANY_CODE, LOGINID, EMAIL_ID, USERNAME, STATUS, CONTACT_NAME,
           CONTACT_NO, CONTACT_EMAIL, ACTIVE_FLAG, USER_ID, USER_CODE, REAL_NAME,
@@ -181,8 +180,7 @@ export class TenantAdminService {
           :companyCode, :loginid, :emailId, :username, :status, :contactName,
           :contactNo, :contactEmail, :activeFlag, :userId, :userCode, :realName,
           :application, :userid, :groupId, :userDescription, :divCode, :lastAction,
-          :loginid1, :updatedBy, :updatedBy, SYSTIMESTAMP, SYSTIMESTAMP,
-          (SELECT NVL(MAX(ID), 0) + 1 FROM ${ROOT_SCHEMA}.SEC_LOGINTEST)${passwordInsertValues}
+          :loginid1, :updatedBy, :updatedBy, NOW(), NOW(), (SELECT COALESCE(MAX(ID), 0) + 1 FROM ${ROOT_SCHEMA}.SEC_LOGINTEST)${passwordInsertValues}
        )`,
       binds
     );
@@ -215,7 +213,7 @@ export class TenantAdminService {
     );
 
     if (existing) {
-      await oracleDb.query(
+      await mysqlDb.query(
         `UPDATE ${ROOT_SCHEMA}.TENANT_REGISTRY
             SET TENANT_NAME = :tenantName,
                 CONNECTION_TYPE = :connectionType,
@@ -229,14 +227,13 @@ export class TenantAdminService {
                 COMPANY_CODE = :companyCode,
                 IS_ACTIVE = :isActive,
                 MAX_CONNECTIONS = :maxConnections,
-                UPDATED_DATE = SYSDATE
+                UPDATED_DATE = NOW()
           WHERE TENANT_ID = :tenantId`,
         binds
       );
       return { mode: "updated" };
     }
-
-    await oracleDb.query(
+    await mysqlDb.query(
       `INSERT INTO ${ROOT_SCHEMA}.TENANT_REGISTRY (
           TENANT_ID, TENANT_NAME, CONNECTION_TYPE, SCHEMA_NAME, DB_HOST, DB_PORT,
           DB_SERVICE, DB_USER, DB_PASSWORD, CONNECTION_STRING, COMPANY_CODE,
@@ -244,7 +241,7 @@ export class TenantAdminService {
        ) VALUES (
           :tenantId, :tenantName, :connectionType, :schemaName, :dbHost, :dbPort,
           :dbService, :dbUser, :dbPassword, :connectionString, :companyCode,
-          :isActive, :maxConnections, SYSDATE, SYSDATE
+          :isActive, :maxConnections, NOW(), NOW()
        )`,
       binds
     );
@@ -274,7 +271,7 @@ export class TenantAdminService {
         );
 
     if (existing) {
-      await oracleDb.query(
+      await mysqlDb.query(
         `UPDATE ${ROOT_SCHEMA}.USER_TENANT_MAPPING
             SET LOGINID = :loginid,
                 TENANT_ID = :tenantId,
@@ -284,10 +281,9 @@ export class TenantAdminService {
       );
       return { mode: "updated" };
     }
-
-    await oracleDb.query(
+    await mysqlDb.query(
       `INSERT INTO ${ROOT_SCHEMA}.USER_TENANT_MAPPING (LOGINID, TENANT_ID, IS_DEFAULT, CREATED_DATE)
-       VALUES (:loginid, :tenantId, :isDefault, SYSDATE)`,
+       VALUES (:loginid, :tenantId, :isDefault, NOW())`,
       {
         loginid: binds.loginid,
         tenantId: binds.tenantId,
@@ -331,13 +327,13 @@ async function listRootTable({
   const pageBinds: Record<string, any> = { ...countBinds, offsetRows: offset, limitRows: limit };
   const selectColumns = columns.map((column) => `${column} AS "${column}"`).join(", ");
   const baseSql = `FROM ${ROOT_SCHEMA}.${table} ${where}`;
-  const countResult = await oracleDb.query(`SELECT COUNT(*) AS TOTAL ${baseSql}`, countBinds);
+  const countResult = await mysqlDb.query(`SELECT COUNT(*) AS TOTAL ${baseSql}`, countBinds);
   const count = Number(countResult.rows?.[0]?.TOTAL || 0);
-  const result = await oracleDb.query(
+  const result = await mysqlDb.query(
     `SELECT ${selectColumns}
        ${baseSql}
       ORDER BY ${orderBy}
-      OFFSET :offsetRows ROWS FETCH NEXT :limitRows ROWS ONLY`,
+      LIMIT :limitRows OFFSET :offsetRows`,
     pageBinds
   );
   return { tableData: result.rows || [], count };
@@ -349,22 +345,22 @@ function buildSearchWhere(columns: string[], searchFilter: any, binds: Record<st
   binds.searchValue = `%${value.toUpperCase()}%`;
   const field = text(searchFilter?.field).toUpperCase();
   const selectedColumns = field && columns.includes(field) ? [field] : columns;
-  return `WHERE (${selectedColumns.map((column) => `UPPER(TO_CHAR(${column})) LIKE :searchValue`).join(" OR ")})`;
+  return `WHERE (${selectedColumns.map((column) => `UPPER(COALESCE(${column}, '')) LIKE :searchValue`).join(" OR ")})`;
 }
 
 async function fetchOne(sql: string, binds: Record<string, any>) {
-  const result = await oracleDb.query(sql, binds);
-  return result.rows?.[0] || null;
+  const result = await mysqlDb.query(sql, binds);
+  return (result.rows && result.rows[0]) || null;
 }
 
 async function deleteByIds(table: string, keyColumn: string, ids: Array<string | number>) {
   let deleted = 0;
   for (const id of ids) {
-    const result = await oracleDb.query(
+    const result = await mysqlDb.query(
       `DELETE FROM ${ROOT_SCHEMA}.${table} WHERE ${keyColumn} = :id`,
       { id }
     );
-    deleted += Number(result.rowsAffected || 0);
+    deleted += Number(result.rowsAffected || result.affectedRows || 0);
   }
   return deleted > 0;
 }

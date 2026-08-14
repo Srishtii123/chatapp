@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { getRepository } from "../database/connection";
 import { User } from "../entity/User";
 import { QueryExecutor } from "../database/QueryExecutor";
-import { oracleDb } from "../database/connection";
+import { mysqlDb } from "../database/connection";
 import { TenantManager } from "../database/TenantManager";
 
 const ROOT_SCHEMA = "CUSTOMERS";
@@ -22,13 +22,13 @@ export class AuthService {
     if (!normalizedIdentifier) return null;
 
     console.log(`[AuthService.findRootUserByIdentifier] Finding user in ${SEC_LOGINTEST_TABLE} for ${normalizedIdentifier}`);
-    const result = await oracleDb.query(
+    const result = await mysqlDb.query(
       `SELECT * FROM ${SEC_LOGINTEST_TABLE}
        WHERE (
-         LOWER(TRIM(NVL(EMAIL_ID, ''))) = LOWER(:identifier)
-         OR LOWER(TRIM(NVL(LOGINID, ''))) = LOWER(:identifier)
-         OR LOWER(TRIM(NVL(CONTACT_EMAIL, ''))) = LOWER(:identifier)
-         OR LOWER(TRIM(NVL(USERNAME, ''))) = LOWER(:identifier)
+         LOWER(TRIM(COALESCE(EMAIL_ID, ''))) = LOWER(:identifier)
+         OR LOWER(TRIM(COALESCE(LOGINID, ''))) = LOWER(:identifier)
+         OR LOWER(TRIM(COALESCE(CONTACT_EMAIL, ''))) = LOWER(:identifier)
+         OR LOWER(TRIM(COALESCE(USERNAME, ''))) = LOWER(:identifier)
        )
        AND ACTIVE_FLAG = 'Y'`,
       { identifier: normalizedIdentifier }
@@ -106,14 +106,14 @@ export class AuthService {
   ): Promise<boolean> {
     try {
       const normalizedIdentifier = String(identifier || "").trim();
-      await oracleDb.query(
+      await mysqlDb.query(
         `UPDATE ${SEC_LOGINTEST_TABLE}
          SET USERPASS = :hashedPassword,
              UPDATED_BY = 'system'
          WHERE (
-           LOWER(TRIM(NVL(EMAIL_ID, ''))) = LOWER(:identifier)
-           OR LOWER(TRIM(NVL(LOGINID, ''))) = LOWER(:identifier)
-           OR LOWER(TRIM(NVL(CONTACT_EMAIL, ''))) = LOWER(:identifier)
+           LOWER(TRIM(COALESCE(EMAIL_ID, ''))) = LOWER(:identifier)
+           OR LOWER(TRIM(COALESCE(LOGINID, ''))) = LOWER(:identifier)
+           OR LOWER(TRIM(COALESCE(CONTACT_EMAIL, ''))) = LOWER(:identifier)
          )`,
         { hashedPassword, identifier: normalizedIdentifier }
       );
@@ -134,10 +134,10 @@ export class AuthService {
       console.log(`[AuthService.createUserFromExternal] Creating user: ${apiUser.USER_ID}...`);
 
       // Insert into central SEC_LOGINTEST table
-      await oracleDb.query(
+      await mysqlDb.query(
         `INSERT INTO ${SEC_LOGINTEST_TABLE}
          (LOGINID, USERNAME, EMAIL_ID, USERPASS, SEC_PASSWD, COMPANY_CODE, ACTIVE_FLAG, CREATED_AT, CREATED_DATE)
-         VALUES (:loginid, :username, :email, :hashedPassword, :hashedPassword, :companyCode, 'Y', 'system', SYSDATE)`,
+         VALUES (:loginid, :username, :email, :hashedPassword, :hashedPassword, :companyCode, 'Y', 'system', NOW())`,
         {
           loginid: apiUser.USER_ID,
           username: apiUser.NAME,

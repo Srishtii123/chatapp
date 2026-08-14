@@ -22,29 +22,14 @@ export const withTenantContext = () => [
   tenantContextMiddleware,
 ];
 
-import freight from "./src/routes/Freight/freight.routes"
-import purchaseSalesRoutes from "./src/routes/purchase_sales/purchase_sales.routes";
 import constants from "./src/helpers/constants";
-import accountsRoutes from "./src/routes/accounts/reports/ageing/ageing_accounts.routes";
 import authRoutes from "./src/routes/auth.routes";
 import fileRoutes from "./src/routes/files.routes";
-import financeRoutes from "./src/routes/finance/finance.routes";
-import hrRoutes from "./src/routes/hr.routes";
 import logRoutes from "./src/routes/notification.routes";
-import pfRoutes from "./src/routes/pf.routes";
-import pfbtflowRoutes from "./src/routes/BT-FLOW.routes";
 import secRoutes from "./src/routes/secuity.routes";
 import editLangrouter from "./src/routes/user/user.routes";
 
-import VendorRouter from "./src/routes/vendor.routes";
-import wmsRoutes from "./src/routes/wms.routes";
-import boldReportsRoutes from "./src/routes/boldreports.routes";
-// import cfsRoutes from "./src/routes/SMS/sms.routes";
-import pamsRoutes from "./src/routes/pams.routes";
 import supportRoutes from "./src/routes/support.routes";
-
-import almsRoutes from "./src/routes/alms.routes";
-import mmsRoutes from "./src/routes/mms_routes";
 
 //----------------routes-------------
 
@@ -52,45 +37,15 @@ app.use("/api/files", fileRoutes);
 
 app.use("/api/auth", authRoutes);
 
-app.use("/api/reports", boldReportsRoutes);
-
 app.use("/api/security", secRoutes);
-
-app.use("/api/hr", hrRoutes);
-app.use("/api/ems", hrRoutes);
-
-app.use("/api/pf", pfRoutes);
-
-// Mount BT-FLOW routes
-app.use("/api/bt-flow", pfbtflowRoutes);
 
 app.use("/api/notification", logRoutes);
 
-app.use("/api/vendor", VendorRouter);
-
-// app.use("/api/finance",financeRoutes );
-
 // app.use("/api/attendance", attendanceRoutes);
-
-app.use("/api/pams/", pamsRoutes);
-
-app.use("/api/wms", wmsRoutes);
-
-app.use("/api/finance", financeRoutes);
-
-app.use("/api/freight", freight);
-
-app.use("/api/purchase-sales", purchaseSalesRoutes);
-
-app.use("/api/alms/", almsRoutes);
-
-app.use("/api/wms", wmsRoutes);
 
 app.use("/api/user", editLangrouter);
 
 app.use("/api/support", supportRoutes);
-
-app.use("/api/mms", mmsRoutes); 
 
 // Health check
 app.get("/health", (req: Request, res: Response) => {
@@ -125,8 +80,8 @@ app.get("/api/diagnostics/database", (req: Request, res: Response) => {
       central: "CUSTOMERS schema (Active)",
       tenants: "Check /api/diagnostics/tenants"
     },
-    connection_string: process.env.ORACLE_CONNECTION_STRING,
-    note: "Tenant databases may fail if unreachable - check server logs",
+    connection_string: process.env.MYSQL_CONNECTION_STRING || process.env.DATABASE_URL || `${process.env.MYSQL_HOST || 'localhost'}:${process.env.MYSQL_PORT || 3306}`,
+    note: "Single-tenant MySQL connection; tenant schemas removed",
     timestamp: new Date().toISOString(),
   });
 });

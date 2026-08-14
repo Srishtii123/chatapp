@@ -33,13 +33,10 @@ export class QueryExecutor {
 
     const conn = await TenantManager.getConnection(tenantId);
     try {
-      const result = await conn.execute(query, params, {
-        outFormat: (require("oracledb") as any).OUT_FORMAT_OBJECT,
-        autoCommit: true,
-      });
+      const result = await conn.query(query, params);
       return result;
     } finally {
-      await conn.close();
+      try { if (conn.release) await conn.release(); } catch (e) { /* ignore */ }
     }
   }
 
@@ -50,13 +47,10 @@ export class QueryExecutor {
   ): Promise<any> {
     const conn = await TenantManager.getConnection(tenantId);
     try {
-      const result = await conn.execute(query, params, {
-        outFormat: (require("oracledb") as any).OUT_FORMAT_OBJECT,
-        autoCommit: true,
-      });
+      const result = await conn.query(query, params);
       return result;
     } finally {
-      await conn.close();
+      try { if (conn.release) await conn.release(); } catch (e) { /* ignore */ }
     }
   }
   
@@ -84,8 +78,7 @@ export class QueryExecutor {
    */
   static async execMaybe(query: string, params: any = {}, conn?: any): Promise<any> {
     if (conn) {
-      const oracledb = require("oracledb");
-      return await conn.execute(query, params, { outFormat: oracledb.OUT_FORMAT_OBJECT });
+      return await conn.query(query, params);
     }
     return await QueryExecutor.executeRawQuery(query, params);
   }
@@ -97,10 +90,10 @@ export class QueryExecutor {
     tenantConfig: any;
   } | null> {
     // Use central connection to get user from SEC_LOGIN
-    const { oracleDb } = require("./connection");
+    const { mysqlDb } = require("./connection");
     
     console.log(`[QueryExecutor.getUserWithTenant] STEP 1: Getting user for email: ${email}...`);
-    const userResult = await oracleDb.query(
+    const userResult = await mysqlDb.query(
       `SELECT * FROM SEC_LOGINTEST
        WHERE (EMAIL_ID = :email OR LOGINID = :email) 
          AND ACTIVE_FLAG = 'Y'`,
