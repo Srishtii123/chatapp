@@ -1,53 +1,74 @@
-// project import
-import { useLocation } from 'react-router-dom';
-import Routes from 'routes';
-import ThemeCustomization from 'themes';
-import Locales from 'components/Locales';
-import ScrollTop from 'components/ScrollTop';
-import Snackbar from 'components/@extended/Snackbar';
-// import CustomAlert from 'components/@extended/CustomAlert';
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { LoginPage } from "./pages/LoginPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { AppSelectionPage } from "./pages/AppSelectionPage";
+import { WorkspacePage } from "./pages/WorkspacePage";
+import { ProtectedRoute } from "./routes/ProtectedRoute";
+import { useAuth } from "./state/AuthContext";
+import { ToastProvider } from "./components/ui/AlertToast";
+import "../src/styles.css";
+import { WmsBootScreen } from "./components/BootScreen";
 
-import Notistack from 'components/third-party/Notistack';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Box } from '@mui/material';
-
-// auth-provider
-import { JWTProvider as AuthProvider } from 'contexts/JWTContext';
-import RTLLayout from 'components/RTLLayout';
-import Footer from 'layout/MainLayout/Footer';
-import SimpleBackDrop from './components/loader/SimpleBackDrop';
-
-// ==============================|| APP - THEME, ROUTER, LOCAL  ||============================== //
-const queryClient = new QueryClient();
-
-const App = () => {
+export function App() {
+  const { isBooting } = useAuth();
   const location = useLocation();
-  const hideFooterRoutes = ['/login', '/register', '/apps']; // Define routes where footer should be hidden
+  const [authDark, setAuthDark] = useState(() => sessionStorage.getItem("bayanat_auth_theme") !== "light");
+  const [workspaceDark, setWorkspaceDark] = useState(() => localStorage.getItem("bayanat_workspace_theme") === "dark");
+
+  useEffect(() => {
+    localStorage.removeItem("bayanat_auth_theme");
+    sessionStorage.setItem("bayanat_auth_theme", authDark ? "dark" : "light");
+  }, [authDark]);
+
+  useEffect(() => {
+    localStorage.setItem("bayanat_workspace_theme", workspaceDark ? "dark" : "light");
+  }, [workspaceDark]);
+
+  const toggleAuthTheme = () => setAuthDark((value) => !value);
+  const toggleWorkspaceTheme = () => setWorkspaceDark((value) => !value);
+  const isAuthRoute = location.pathname === "/login" || location.pathname === "/reset-password";
+  const activeDark = isAuthRoute ? authDark : workspaceDark;
+
+  // if (isBooting) {
+  //   return (
+  //     <div className="boot-screen">
+  //       <div className="spinner" />
+  //       <span>Starting secure workspace...</span>
+  //     </div>
+  //   );
+  // }
+
+if (isBooting) {
+  return <WmsBootScreen />;
+}
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeCustomization>
-        <RTLLayout>
-          <Locales>
-            <ScrollTop>
-              <AuthProvider>
-                <Notistack>
-                  <Box sx={{ pb: '60px' }}>
-                    {' '}
-                    {/* Add padding bottom to prevent footer overlap */}
-                    <SimpleBackDrop />
-                    <Routes />
-                    {!hideFooterRoutes.includes(location.pathname) && <Footer />}
-                    <Snackbar />
-                  </Box>
-                </Notistack>
-              </AuthProvider>
-            </ScrollTop>
-          </Locales>
-        </RTLLayout>
-      </ThemeCustomization>
-    </QueryClientProvider>
+    <div className={activeDark ? "app dark" : "app"}>
+      <ToastProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<LoginPage dark={authDark} onToggleTheme={toggleAuthTheme} />} />
+          <Route path="/reset-password" element={<ResetPasswordPage dark={authDark} onToggleTheme={toggleAuthTheme} />} />
+          <Route
+          path="/apps"
+          element={
+            <ProtectedRoute>
+              <AppSelectionPage dark={workspaceDark} onToggleTheme={toggleWorkspaceTheme} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workspace/:appCode/*"
+          element={
+            <ProtectedRoute>
+              <WorkspacePage dark={workspaceDark} onToggleTheme={toggleWorkspaceTheme} />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/apps" replace />} />
+      </Routes>
+    </ToastProvider>
+    </div>
   );
-};
-
-export default App;
+}

@@ -1,16 +1,59 @@
+import animate from "tailwindcss-animate";
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ['./src/**/*.{html,js,jsx,ts,tsx}'], // check all file extensions being used
+export default {
+  darkMode: ["class"],
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
-      screens: {
-        '3xl': '1700px' // custom screen size
+      colors: {
+        border: "var(--border)",
+        input: "var(--border)",
+        ring: "var(--primary)",
+        background: "var(--bg)",
+        foreground: "var(--text)",
+        primary: {
+          DEFAULT: "var(--primary)",
+          foreground: "var(--primary-ink)",
+        },
+        secondary: {
+          DEFAULT: "var(--panel-soft)",
+          foreground: "var(--text)",
+        },
+        destructive: {
+          DEFAULT: "var(--danger)",
+          foreground: "#ffffff",
+        },
+        muted: {
+          DEFAULT: "var(--panel-soft)",
+          foreground: "var(--muted)",
+        },
+        accent: {
+          DEFAULT: "var(--panel-soft)",
+          foreground: "var(--text)",
+        },
+        card: {
+          DEFAULT: "var(--panel)",
+          foreground: "var(--text)",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        segoe: ['Segoe UI', 'sans-serif'], // custom font family
-        roboto: ['Roboto', 'sans-serif'] // custom font family
-      }
-    }
+        sans: [
+          "Inter",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "\"Segoe UI\"",
+          "sans-serif",
+        ],
+      },
+    },
   },
-  plugins: []
+  plugins: [animate],
 };
