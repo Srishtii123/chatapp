@@ -1,7 +1,7 @@
 // import GmPfServiceInstance from 'service/Purchaseflow/services.purchaseflow';
 import useAuth from 'hooks/useAuth';
 import { useState, useEffect } from 'react';
-import GmPfServiceInstance from 'service/Purchaseflow/services.purchaseflow';
+// import GmPfServiceInstance from 'service/Purchaseflow/services.purchaseflow';
 
 export let gs_userlevel: any = null;
 export function useInitializeUserLevel(): void {
@@ -26,7 +26,7 @@ export function useInitializeUserLevel(): void {
           return;
         }
 
-        gs_userlevel = await GmPfServiceInstance.fetchUserlevel(userId, companyCode, '001');
+        // gs_userlevel = await GmPfServiceInstance.fetchUserlevel(userId, companyCode, '001');
         console.log('Global User Level initialized:', gs_userlevel);
         setInitialized(true);
       } catch (error) {

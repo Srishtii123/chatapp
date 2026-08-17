@@ -1,4 +1,5 @@
-import { TSite } from 'pages/WMS/types/site-wms.types';
+/* eslint-disable */
+// import { TSite } from 'pages/WMS/types/site-wms.types';
 import { dispatch } from 'store';
 import { openSnackbar } from 'store/reducers/snackbar';
 import axiosServices from 'utils/axios';
@@ -338,10 +339,10 @@ class common {
     }
   };
 
-  async update_site(updatedRow: TSite) {
-    const response = await axiosServices.post('api/wms/common/update_site', updatedRow);
-    return response.data;
-  }
+  // async update_site(updatedRow: TSite) {
+  //   const response = await axiosServices.post('api/wms/common/update_site', updatedRow);
+  //   return response.data;
+  // }
 
   // ================================ INSERT AND UPDATE ===========================
 

@@ -18,7 +18,7 @@ import {
   TableRow,
   Typography
 } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -35,7 +35,7 @@ import { ISearch } from 'components/filters/SearchFilter';
 import TablePaginationActions from 'components/third-party/ReactTablePagination';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
-import pickingServiceInstance from 'service/wms/transaction/outbound/service.pickingDetailsWms';
+// import pickingServiceInstance from 'service/wms/transaction/outbound/service.pickingDetailsWms';
 import { TableActionButtons } from 'types/common.types';
 import { getPathNameList } from 'utils/functions';
 import { ITEM_HEIGHT, rowsPerPageOptions } from './CustomDataTables';
@@ -59,25 +59,28 @@ const ReactSubTable = (props: ISubReactTable) => {
     hasPagination = true,
     filter = { search: [] as ISearch['search'], sort: {} as ISearch['sort'] },
     handleExportData = () => {},
-    tableActions
+    tableActions,
+    customData
   } = props;
   const [sorting, setSorting] = useState<SortingState>([]); // State for sorting
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]); // State for column filters
-  const [paginationData, setPaginationData] = useState({ page: 0, rowsPerPage: rowsPerPageOptions[0] }); // State for pagination data
+  const [, setPaginationData] = useState({ page: 0, rowsPerPage: rowsPerPageOptions[0] }); // State for pagination data
   const [page, setPage] = useState<number>(0); // State for current page
   const [rowsPerPage, setRowsPerPage] = useState<number>(rowsPerPageOptions[0]); // State for rows per page
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null); // State for anchor element
   const openMenu = Boolean(anchorEl); // State for menu open
-  const [filterData, setFilterData] = useState<ISearch>(filter as ISearch); // State for filter data
+  const [, setFilterData] = useState<ISearch>(filter as ISearch); // State for filter data
   const location = useLocation(); // Get current location
   const pathNameList = getPathNameList(location.pathname); // Get path name list
 
   //----------- useQuery--------------
-  const { data, isFetching: isDataFetching } = useQuery({
-    queryKey: [`${row.index}`, filterData, paginationData],
-    queryFn: () => pickingServiceInstance.getPickingItemStockDetails(paginationData, filterData),
-    enabled: !!filterData && filterData.search.length > 1
-  }); // Fetch data using react-query
+  // const { data, isFetching: isDataFetching } = useQuery({
+  //   queryKey: [`${row.index}`, filterData, paginationData],
+  //   queryFn: () => pickingServiceInstance.getPickingItemStockDetails(paginationData, filterData),
+  //   enabled: !!filterData && filterData.search.length > 1
+  // }); // Fetch data using react-query
+  const data = customData;
+  const isDataFetching = false;
 
   //---------------table instance-----------
   const subTableInstance = useReactTable({

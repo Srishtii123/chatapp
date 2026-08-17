@@ -2,7 +2,7 @@ import { ISearch } from 'components/filters/SearchFilter';
 import { dispatch } from 'store';
 import { closeBackdrop, openBackdrop } from 'store/reducers/backdropSlice';
 import { openSnackbar } from 'store/reducers/snackbar';
-import { TFilterDataDashboard, TWarehouseData, TwarehouseUtilization } from 'types/dashboard/dashboard.types';
+// import { TFilterDataDashboard, TWarehouseData, TwarehouseUtilization } from 'types/dashboard/dashboard.types';
 import { IApiResponse } from 'types/types.services';
 import axiosServices from 'utils/axios';
 
@@ -96,60 +96,60 @@ class Wms {
       );
     }
   };
-  getWmsGraph = async (filterData: TFilterDataDashboard) => {
-    try {
-      // app_code = 'pf';
-      const response: IApiResponse<TwarehouseUtilization> = await axiosServices.get('api/wms/dashboard/warehouseGraph', {
-        params: {
-          ...{ filter: JSON.stringify(filterData) }
-        }
-      });
-      if (response.data.success) {
-        return response.data.data;
-      }
-    } catch (error: unknown) {
-      const knownError = error as { message: string };
-      dispatch(
-        openSnackbar({
-          open: true,
-          message: knownError.message,
-          variant: 'alert',
-          alert: {
-            color: 'error'
-          },
-          severity: 'error',
-          close: true
-        })
-      );
-    }
-  };
-  getWmsData = async (filterData: TFilterDataDashboard) => {
-    try {
-      // app_code = 'pf';
-      const response: IApiResponse<TWarehouseData> = await axiosServices.get('api/wms/dashboard/warehouseData', {
-        params: {
-          ...{ filter: JSON.stringify(filterData) }
-        }
-      });
-      if (response.data.success) {
-        return response.data.data;
-      }
-    } catch (error: unknown) {
-      const knownError = error as { message: string };
-      dispatch(
-        openSnackbar({
-          open: true,
-          message: knownError.message,
-          variant: 'alert',
-          alert: {
-            color: 'error'
-          },
-          severity: 'error',
-          close: true
-        })
-      );
-    }
-  };
+  // getWmsGraph = async (filterData: TFilterDataDashboard) => {
+  //   try {
+  //     // app_code = 'pf';
+  //     const response: IApiResponse<TwarehouseUtilization> = await axiosServices.get('api/wms/dashboard/warehouseGraph', {
+  //       params: {
+  //         ...{ filter: JSON.stringify(filterData) }
+  //       }
+  //     });
+  //     if (response.data.success) {
+  //       return response.data.data;
+  //     }
+  //   } catch (error: unknown) {
+  //     const knownError = error as { message: string };
+  //     dispatch(
+  //       openSnackbar({
+  //         open: true,
+  //         message: knownError.message,
+  //         variant: 'alert',
+  //         alert: {
+  //           color: 'error'
+  //         },
+  //         severity: 'error',
+  //         close: true
+  //       })
+  //     );
+  //   }
+  // };
+  // getWmsData = async (filterData: TFilterDataDashboard) => {
+  //   try {
+  //     // app_code = 'pf';
+  //     const response: IApiResponse<TWarehouseData> = await axiosServices.get('api/wms/dashboard/warehouseData', {
+  //       params: {
+  //         ...{ filter: JSON.stringify(filterData) }
+  //       }
+  //     });
+  //     if (response.data.success) {
+  //       return response.data.data;
+  //     }
+  //   } catch (error: unknown) {
+  //     const knownError = error as { message: string };
+  //     dispatch(
+  //       openSnackbar({
+  //         open: true,
+  //         message: knownError.message,
+  //         variant: 'alert',
+  //         alert: {
+  //           color: 'error'
+  //         },
+  //         severity: 'error',
+  //         close: true
+  //       })
+  //     );
+  //   }
+  // };
 
   getddPrinceProductavaliable = async (company_code: string, prin_code: string): Promise<TddPrinProduct | null> => {
     try {
