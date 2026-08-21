@@ -7,7 +7,7 @@ import {
   JoinColumn,
 } from "typeorm";
 import constants from "../helpers/constants";
-import { Company } from "./Company";
+import { Company } from "./Security/company.entity";
 
 @Entity(constants.TABLE.SEC_LOGINTEST)
 export class User {
@@ -80,7 +80,7 @@ export class User {
   loginid1!: string;
   
   // Company relationship
-  @ManyToOne(() => Company, (company) => company.users)
+  @ManyToOne(() => Company)
   @JoinColumn({ name: "COMPANY_CODE", referencedColumnName: "company_code" })
   company!: Company;
 }
