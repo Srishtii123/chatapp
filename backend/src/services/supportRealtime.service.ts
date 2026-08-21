@@ -1,19 +1,17 @@
 import http from "http";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
-import constants from "../helpers/constants";
 
 type SocketUser = {
   loginid: string;
   username?: string;
   company_code?: string;
-  tenantId?: string;
   isSupportAdmin: boolean;
 };
 
 let ioServer: Server | null = null;
 const connectedUsers = new Map<string, SocketUser & { socketCount: number; lastSeenAt: Date }>();
-const SUPPORT_ADMIN_LOGINIDS = new Set(["ADMIN", "BTADMIN", "SUPERADMIN", "2012020136"]);
+const SUPPORT_ADMIN_LOGINIDS = new Set((process.env.SUPPORT_ADMIN_LOGINIDS || "ADMIN,BTADMIN,SUPERADMIN").split(",").map((id) => id.trim().toUpperCase()));
 
 export function isSupportAdminUser(user: any) {
   const loginid = String(user?.loginid || user?.LOGINID || "").toUpperCase();
@@ -41,12 +39,11 @@ export function initSupportRealtime(server: http.Server) {
         String(socket.handshake.headers.authorization || "").replace(/^Bearer\s+/i, "");
       if (!token) return next(new Error("Missing token"));
 
-      const payload: any = jwt.verify(token, constants.AUTHENTICATION.APP_SECRET || process.env.APP_SECRET || "BAYANAT");
+      const payload: any = jwt.verify(token, process.env.APP_SECRET || "BAYANAT");
       const user: SocketUser = {
         loginid: String(payload.loginid || ""),
         username: payload.username,
         company_code: payload.company_code,
-        tenantId: payload.tenantId,
         isSupportAdmin: isSupportAdminUser(payload),
       };
       if (!user.loginid) return next(new Error("Invalid token"));
@@ -115,7 +112,6 @@ export function getConnectedSupportUsers() {
     LOGINID: user.loginid,
     USERNAME: user.username,
     COMPANY_CODE: user.company_code,
-    TENANT_ID: user.tenantId,
     LAST_SEEN_AT: user.lastSeenAt.toISOString(),
     IS_ONLINE: "Y",
   }));

@@ -11,5 +11,20 @@
     "strictPropertyInitialization": false,
     "skipLibCheck": true
   },
+  "include": [
+    "index.ts",
+    "src/database/connection.ts",
+    "src/routes/auth.routes.ts",
+    "src/routes/support.routes.ts",
+    "src/controllers/auth.controller.ts",
+    "src/controllers/supportChat.controller.ts",
+    "src/services/auth.service.ts",
+    "src/services/supportChat.service.ts",
+    "src/services/supportAssistant.service.ts",
+    "src/services/supportRealtime.service.ts",
+    "src/services/supportMail.service.ts",
+    "src/services/ociUpload.service.ts",
+    "src/utils/passport.ts"
+  ],
   "exclude": ["node_modules", "build"]
 }

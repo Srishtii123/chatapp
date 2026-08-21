@@ -377,7 +377,7 @@ export function AdminSupportCenterPage() {
                 const online = isSupportUserOnline(item);
                 const name = item.USERNAME || item.LOGINID || "User";
                 return (
-                  <button key={`${item.LOGINID}-${item.TENANT_ID || ""}`} onClick={() => setActiveTab("users")}>
+                  <button key={item.LOGINID} onClick={() => setActiveTab("users")}>
                     <span className="support-center-avatar">{name.slice(0, 2).toUpperCase()}<i className={online ? "online" : ""} /></span>
                     <span>
                       <strong>{name}</strong>
@@ -565,7 +565,7 @@ export function AdminSupportCenterPage() {
             <div className="support-center-presence-grid">
               {onlineUsers.map((item) => {
                 const name = item.USERNAME || item.LOGINID || "User";
-                return <PresenceCard item={item} name={name} online key={`${item.LOGINID}-${item.TENANT_ID || ""}`} />;
+                return <PresenceCard item={item} name={name} online key={item.LOGINID} />;
               })}
               {!onlineUsers.length && <p className="support-center-muted">No users are online right now.</p>}
             </div>
@@ -579,7 +579,7 @@ export function AdminSupportCenterPage() {
             <div className="support-center-presence-grid">
               {awayUsers.map((item) => {
                 const name = item.USERNAME || item.LOGINID || "User";
-                return <PresenceCard item={item} name={name} online={false} key={`${item.LOGINID}-${item.TENANT_ID || ""}`} />;
+                return <PresenceCard item={item} name={name} online={false} key={item.LOGINID} />;
               })}
               {!awayUsers.length && <p className="support-center-muted">No away users found.</p>}
             </div>
@@ -595,12 +595,12 @@ export function AdminSupportCenterPage() {
               const online = isSupportUserOnline(item);
               const name = item.USERNAME || item.LOGINID || "User";
               return (
-                <div className={cn("support-center-user", online && "online")} key={`${item.LOGINID}-${item.TENANT_ID || ""}`}>
+                <div className={cn("support-center-user", online && "online")} key={item.LOGINID}>
                   <div className="support-center-avatar">{name.slice(0, 2).toUpperCase()}<i className={online ? "online" : ""} /></div>
                   <div>
                     <strong>{name}</strong>
                     <span>{item.LOGINID} - {online ? "Online" : "Away"}</span>
-                    <small>{item.TENANT_ID || item.COMPANY_CODE || "Tenant"}</small>
+                    <small>{item.COMPANY_CODE || "Support user"}</small>
                   </div>
                 </div>
               );
@@ -965,7 +965,7 @@ function PresenceCard({ item, name, online }: { item: SupportUser; name: string;
       <div>
         <strong>{name}</strong>
         <span>{item.LOGINID}</span>
-        <small>{item.TENANT_ID || item.COMPANY_CODE || "Tenant"}</small>
+        <small>{item.COMPANY_CODE || "Support user"}</small>
       </div>
       <em>{online ? "Online" : "Away"}</em>
     </div>

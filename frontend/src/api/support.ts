@@ -60,7 +60,6 @@ export type SupportUser = {
   USERNAME?: string;
   EMAIL_ID?: string;
   COMPANY_CODE?: string;
-  TENANT_ID?: string;
   LAST_SEEN_AT?: string;
   IS_ONLINE?: string;
 };

@@ -26,18 +26,13 @@ export type UserProfile = {
   COMPANY_CODE?: string;
   company_name?: string;
   COMPANY_NAME?: string;
-  tenantId?: string;
-  tenant_name?: string;
-  TENANT_NAME?: string;
-  tenantName?: string;
-  TENANTNAME?: string;
+  support_role?: "ADMIN" | "USER";
 };
 
 export type LoginResponse = {
   success: boolean;
   data: {
     token: string;
-    tenantId?: string;
     user: UserProfile;
   };
   message?: string;
@@ -47,7 +42,6 @@ export type AuthMeResponse = {
   success: boolean;
   data: {
     user: UserProfile;
-    tenantId?: string;
     permissionBasedMenuTree: MenuNode[];
     permissions: Record<string, unknown>;
     user_permission: Record<string, unknown>;

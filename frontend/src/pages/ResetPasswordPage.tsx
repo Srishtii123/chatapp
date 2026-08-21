@@ -23,7 +23,7 @@ export function ResetPasswordPage({ dark, onToggleTheme }: { dark: boolean; onTo
   const [loading, setLoading] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to="/apps" replace />;
+    return <Navigate to="/support" replace />;
   }
 
   const handleSubmit = async (event: FormEvent) => {

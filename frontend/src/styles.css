@@ -1493,7 +1493,7 @@ footer,
   text-transform: uppercase;
 }
 
-.tenant-pill {
+.context-pill {
   max-width: 190px;
   min-height: 28px;
   display: inline-flex;
@@ -6279,7 +6279,7 @@ freight-dense-form .freight-form-card {
     width: 100%;
   }
 
-  .tenant-pill {
+  .context-pill {
     margin-left: auto;
   }
 
@@ -6804,7 +6804,7 @@ freight-dense-form .freight-form-card {
     gap: 8px;
   }
 
-  .tenant-pill {
+  .context-pill {
     max-width: 150px;
   }
 

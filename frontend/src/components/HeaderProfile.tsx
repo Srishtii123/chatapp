@@ -16,7 +16,6 @@ export function HeaderProfile({
   const [open, setOpen] = useState(false);
   const displayName = user?.username || user?.loginid || "User";
   const companyName = user?.company_name || user?.company_code || user?.COMPANY_CODE || "Company";
-  const tenantName = user?.tenant_name || user?.TENANT_NAME || user?.tenantName || user?.TENANTNAME || "-";
   const email = user?.email_id || user?.EMAIL_ID || "-";
 
   return (
@@ -51,10 +50,6 @@ export function HeaderProfile({
             <div>
               <span>Login</span>
               <strong>{user?.loginid || "-"}</strong>
-            </div>
-            <div>
-              <span>Tenant</span>
-              <strong>{tenantName}</strong>
             </div>
             <div>
               <span>Company</span>

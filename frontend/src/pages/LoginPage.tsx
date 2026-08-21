@@ -23,7 +23,7 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
   const [forgotLoading, setForgotLoading] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to="/apps" replace />;
+    return <Navigate to="/support" replace />;
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -38,7 +38,7 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
     try {
       setLoading(true);
       await login(email.trim(), password);
-      navigate((location.state as { from?: string } | null)?.from || "/apps", {
+      navigate((location.state as { from?: string } | null)?.from || "/support", {
         replace: true,
       });
     } catch (err) {
@@ -97,13 +97,13 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
           <img src="/bayanat-logo.png" alt="Bayanat Technology" className="login-logo" />
           <div>
             <strong>Bayanat Technology</strong>
-            <span>Enterprise Resource Planning</span>
+            <span>Customer Support</span>
           </div>
         </div>
         <div className="brand-copy">
           <h1 className="brand-title">
-            <span>Enterprise Resource Planning</span>
-            <strong>ERP</strong>
+            <span>Secure customer assistance</span>
+            <strong>Support Chat</strong>
           </h1>
         </div>
         <div className="brand-status">
@@ -157,7 +157,7 @@ export function LoginPage({ dark, onToggleTheme }: { dark: boolean; onToggleThem
               </div>
               <div>
                 <h2>Welcome back</h2>
-                <p>Sign in to continue to your ERP workspace.</p>
+                <p>Sign in to continue to the support desk.</p>
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { mysqlDb } from "../database/connection";
-import { notifyUser } from "../helpers/functions";
+import { sendSupportMail } from "./supportMail.service";
 import { uploadSupportAttachmentToS3 } from "./ociUpload.service";
 import { SupportAssistantService } from "./supportAssistant.service";
 import { emitSupportPresenceChanged, emitSupportTicketChanged, getConnectedSupportUsers, resolveSupportRole } from "./supportRealtime.service";
@@ -10,7 +10,6 @@ type UserContext = {
   loginid?: string;
   username?: string;
   company_code?: string;
-  tenantId?: string;
 };
 
 type AttachmentInput = {
@@ -30,7 +29,6 @@ export class SupportChatService {
       `CREATE TABLE SUPPORT_TICKET (
         TICKET_ID INT AUTO_INCREMENT PRIMARY KEY,
         COMPANY_CODE VARCHAR(20),
-        TENANT_ID VARCHAR(50),
         REQUESTER_LOGINID VARCHAR(100) NOT NULL,
         REQUESTER_NAME VARCHAR(400),
         ASSIGNED_TO VARCHAR(100),
@@ -112,7 +110,6 @@ export class SupportChatService {
         LOGINID VARCHAR(100) PRIMARY KEY,
         USERNAME VARCHAR(400),
         COMPANY_CODE VARCHAR(20),
-        TENANT_ID VARCHAR(50),
         LAST_SEEN_AT VARCHAR(30)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
     );
@@ -127,7 +124,6 @@ export class SupportChatService {
       loginid,
       username: getUserName(user),
       companyCode: user.company_code || "",
-      tenantId: user.tenantId || "",
     };
     const existing = await fetchOne(`SELECT LOGINID FROM SUPPORT_PRESENCE WHERE LOGINID = :loginid`, { loginid });
     if (existing) {
@@ -135,7 +131,6 @@ export class SupportChatService {
         `UPDATE SUPPORT_PRESENCE
             SET USERNAME = :username,
                 COMPANY_CODE = :companyCode,
-                TENANT_ID = :tenantId,
                 LAST_SEEN_AT = NOW()
           WHERE LOGINID = :loginid`,
         binds
@@ -143,8 +138,8 @@ export class SupportChatService {
     } else {
       await mysqlDb.query(
         `INSERT INTO SUPPORT_PRESENCE
-          (LOGINID, USERNAME, COMPANY_CODE, TENANT_ID, LAST_SEEN_AT)
-         VALUES (:loginid, :username, :companyCode, :tenantId, NOW())`,
+          (LOGINID, USERNAME, COMPANY_CODE, LAST_SEEN_AT)
+         VALUES (:loginid, :username, :companyCode, NOW())`,
         binds
       );
     }
@@ -156,7 +151,7 @@ export class SupportChatService {
     await this.ensureSchema();
     const seen = lastSeenSql();
     const result = await mysqlDb.query(
-      `SELECT LOGINID, USERNAME, COMPANY_CODE, TENANT_ID,
+      `SELECT LOGINID, USERNAME, COMPANY_CODE,
               DATE_FORMAT(${seen}, '%Y-%m-%d %H:%i:%s') AS LAST_SEEN_AT,
               CASE WHEN ${seen} >= NOW() - INTERVAL 5 MINUTE THEN 'Y' ELSE 'N' END AS IS_ONLINE
          FROM SUPPORT_PRESENCE
@@ -176,7 +171,7 @@ export class SupportChatService {
     if (!isAdmin) binds.loginid = loginid;
     const seen = lastSeenSql("P");
     const result = await mysqlDb.query(
-              `SELECT T.TICKET_ID, T.COMPANY_CODE, T.TENANT_ID, T.REQUESTER_LOGINID, T.REQUESTER_NAME,
+              `SELECT T.TICKET_ID, T.COMPANY_CODE, T.REQUESTER_LOGINID, T.REQUESTER_NAME,
               T.ASSIGNED_TO, T.SUBJECT, T.MODULE_NAME, T.PAGE_URL, T.STATUS, T.PRIORITY,
               T.DEVELOPER_LOGINID, T.DEVELOPER_NAME, T.DEVELOPER_EMAIL, T.DEV_STATUS, T.ASSIGNED_BY,
               T.SLA_MINUTES,
@@ -249,16 +244,15 @@ export class SupportChatService {
     const subject = cleanText(input.subject) || message.slice(0, 80) || "Support request";
     const insertResult = await mysqlDb.query(
       `INSERT INTO ${ROOT_SCHEMA ? `${ROOT_SCHEMA}.` : ''}SUPPORT_TICKET
-        (COMPANY_CODE, TENANT_ID, REQUESTER_LOGINID, REQUESTER_NAME, ASSIGNED_TO,
+        (COMPANY_CODE, REQUESTER_LOGINID, REQUESTER_NAME, ASSIGNED_TO,
          SUBJECT, MODULE_NAME, PAGE_URL, STATUS, PRIORITY, LAST_MESSAGE, LAST_MESSAGE_AT,
          CREATED_AT, UPDATED_AT)
        VALUES
-        (:companyCode, :tenantId, :loginid, :requesterName, :assignedTo,
+        (:companyCode, :loginid, :requesterName, :assignedTo,
          :subject, :moduleName, :pageUrl, 'OPEN', :priority, :message, NOW(),
          NOW(), NOW())`,
       {
         companyCode: user.company_code || "",
-        tenantId: user.tenantId || "",
         loginid,
         requesterName: getUserName(user),
         assignedTo: cleanText(input.assigned_to),
@@ -474,7 +468,7 @@ export class SupportChatService {
     await this.ensureSchema();
     const loginid = getLoginId(user);
     const result = await mysqlDb.query(
-      `SELECT TICKET_ID, COMPANY_CODE, TENANT_ID, REQUESTER_LOGINID, REQUESTER_NAME,
+      `SELECT TICKET_ID, COMPANY_CODE, REQUESTER_LOGINID, REQUESTER_NAME,
               ASSIGNED_TO, SUBJECT, MODULE_NAME, PAGE_URL, STATUS, PRIORITY,
               DEVELOPER_LOGINID, DEVELOPER_NAME, DEVELOPER_EMAIL, DEV_STATUS, ASSIGNED_BY,
               SLA_MINUTES,
@@ -656,8 +650,7 @@ export class SupportChatService {
       </div>
     `;
     try {
-      await notifyUser({
-        event: "TRANSACTION_COMPLETED",
+      await sendSupportMail({
         request_users: input.developerEmail,
         subject,
         message: `Support ticket #${input.ticketId} has been assigned to you.`,
@@ -747,11 +740,11 @@ async function storeAttachmentInObjectStorage(attachment: AttachmentInput, ticke
     };
   }
 
-  const safeTenant = safeObjectSegment(user.tenantId || user.company_code || "tenant");
+  const safeNamespace = safeObjectSegment(user.company_code || "support");
   const safeLogin = safeObjectSegment(getLoginId(user));
   const objectKey = [
     "support-chat",
-    safeTenant,
+    safeNamespace,
     String(ticketId),
     String(messageId),
     `${Date.now()}-${safeLogin}-${fileName}`,
